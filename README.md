@@ -30,7 +30,7 @@ Decisions so far:
 - **Lite model.** MediaPipe ships lite, full and heavy pose models. The lite one (~5.5 MB) is the fastest and smallest download. Mime gestures are big, clear movements, so the extra precision of the larger models isn't worth the cost.
 - **Self-hosted files.** The WASM runtime and model are served from this site (`public/`) rather than Google's CDN. That keeps versions locked to the installed npm package and avoids depending on a third-party host.
 - **GPU first, CPU fallback.** MediaPipe runs on WebGL where available and falls back to CPU otherwise.
-- **Only new frames are processed.** The render loop runs at the display's refresh rate (often 60–144 Hz), but the webcam delivers about 30 fps. The loop skips any tick where the video frame hasn't changed.
+- **Only new frames are processed.** The loop uses `requestVideoFrameCallback`, which fires once per new camera frame (~30 fps). An earlier version used `requestAnimationFrame` and checked `video.currentTime` for changes. That fires at the display's refresh rate (60–165 Hz), and some browsers advance `currentTime` continuously for live streams. The result was the same frame being processed about 5 times on a 165 Hz monitor, which would also have put duplicate frames into recordings. The old approach is kept only as a fallback for browsers without the API.
 - **Upper-body focus.** The highlighted joints (head, shoulders, elbows, wrists, hands) will be the model's features, because they're readable when sitting. Joints below the visibility threshold are hidden, just as the model will treat them as missing.
 
 ### Guessing model

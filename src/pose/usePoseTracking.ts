@@ -30,7 +30,7 @@ interface Options {
 }
 
 /**
- * Runs MediaPipe Pose on every new webcam frame in a requestAnimationFrame loop.
+ * Runs MediaPipe Pose once per new webcam frame (via requestVideoFrameCallback).
  * Per-frame results go to `onFrame` instead of React state, so the 30 fps
  * loop doesn't re-render the UI. Stats update twice a second.
  */
@@ -48,6 +48,8 @@ export function usePoseTracking(videoRef: RefObject<HTMLVideoElement | null>, { 
 
     let cancelled = false
     let rafId = 0
+    let videoFrameId = 0
+    let cancelLoop: (() => void) | null = null
     let close: (() => void) | null = null
 
     void (async () => {
@@ -73,14 +75,7 @@ export function usePoseTracking(videoRef: RefObject<HTMLVideoElement | null>, { 
       let windowStart = performance.now()
       let personDetected = false
 
-      const loop = () => {
-        rafId = requestAnimationFrame(loop)
-        const video = videoRef.current
-        if (!video || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return
-        // rAF runs at display rate (often 60+ Hz); only process genuinely new camera frames.
-        if (video.currentTime === lastVideoTime) return
-        lastVideoTime = video.currentTime
-
+      const process = (video: HTMLVideoElement) => {
         // MediaPipe requires strictly increasing timestamps.
         const timestamp = Math.max(performance.now(), lastTimestamp + 1)
         lastTimestamp = timestamp
@@ -102,12 +97,40 @@ export function usePoseTracking(videoRef: RefObject<HTMLVideoElement | null>, { 
           windowStart = timestamp
         }
       }
-      rafId = requestAnimationFrame(loop)
+
+      const video = videoRef.current
+      if (!video || cancelled) return
+
+      // TS's DOM types assume this API always exists; check at runtime for older browsers.
+      const supportsVideoFrameCallback = typeof (video as Partial<HTMLVideoElement>).requestVideoFrameCallback === 'function'
+      if (supportsVideoFrameCallback) {
+        // Preferred: fires exactly once per new camera frame (~30 Hz), whatever the display refresh rate.
+        const onVideoFrame = () => {
+          if (cancelled) return
+          process(video)
+          videoFrameId = video.requestVideoFrameCallback(onVideoFrame)
+        }
+        videoFrameId = video.requestVideoFrameCallback(onVideoFrame)
+        cancelLoop = () => video.cancelVideoFrameCallback(videoFrameId)
+      } else {
+        // Fallback: rAF runs at display rate (60–165 Hz), so skip ticks where the frame hasn't changed.
+        // Some browsers advance currentTime continuously for live streams, so this can over-count.
+        const onAnimationFrame = () => {
+          if (cancelled) return
+          rafId = requestAnimationFrame(onAnimationFrame)
+          if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return
+          if (video.currentTime === lastVideoTime) return
+          lastVideoTime = video.currentTime
+          process(video)
+        }
+        rafId = requestAnimationFrame(onAnimationFrame)
+        cancelLoop = () => cancelAnimationFrame(rafId)
+      }
     })()
 
     return () => {
       cancelled = true
-      cancelAnimationFrame(rafId)
+      cancelLoop?.()
       close?.()
     }
   }, [enabled, videoRef])
