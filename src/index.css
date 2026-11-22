@@ -1,0 +1,144 @@
+:root {
+  --bg: #0d0b1a;
+  --bg-raised: #17142b;
+  --text: #ece9ff;
+  --text-dim: #a29cc7;
+  --accent: #7cf3d0;
+  --accent-2: #b48cff;
+  --danger: #ff7a8a;
+  --radius: 16px;
+
+  color-scheme: dark;
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background:
+    radial-gradient(ellipse at 50% -20%, rgba(180, 140, 255, 0.18), transparent 60%),
+    var(--bg);
+}
+
+.screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  padding: 32px 16px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.screen__header {
+  text-align: center;
+}
+
+.logo {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.logo span {
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.tagline {
+  margin: 4px 0 0;
+  color: var(--text-dim);
+}
+
+/* Camera */
+
+.camera {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--bg-raised);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+}
+
+.camera__mirror {
+  position: absolute;
+  inset: 0;
+  transform: scaleX(-1); /* selfie view: moving your right hand moves the one on the right */
+}
+
+.camera__video,
+.camera__overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.camera__ui {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  pointer-events: none;
+}
+
+.notice {
+  margin: auto 0;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: rgba(13, 11, 26, 0.75);
+  backdrop-filter: blur(6px);
+  font-weight: 600;
+}
+
+.notice--error {
+  color: var(--danger);
+  border-radius: var(--radius);
+  max-width: 32rem;
+  text-align: center;
+}
+
+.stats {
+  align-self: flex-start;
+  display: flex;
+  gap: 16px;
+  margin: 0;
+  margin-top: auto;
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: rgba(13, 11, 26, 0.7);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.stats div {
+  display: flex;
+  gap: 6px;
+}
+
+.stats dt {
+  color: var(--text-dim);
+}
+
+.stats dd {
+  margin: 0;
+  font-weight: 700;
+}
