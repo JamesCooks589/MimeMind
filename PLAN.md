@@ -48,7 +48,7 @@ Avoided on purpose because they look like an existing action: kayaking (≈ rowi
 - Use MediaPipe visibility scores to mask joints that are out of frame (for example, legs when sitting). The model must cope with missing lower-body joints.
 - Use mainly upper-body joints (shoulders, elbows, wrists, hands, head) as features.
 - **Resample by time, not frame count.** Webcams vary between ~15 and 30 fps (many drop to 15 fps in dim light). Store a timestamp per frame and resample every clip/window to a fixed rate (e.g. 30 Hz) so the model always sees the same timing.
-- Hands are the Pose model's 3 points per hand (thumb, index, pinky), not the 21-point Hand Landmarker. Revisit only if the confusion matrix shows hand-shape-dependent mix-ups.
+- Hands are the Pose model's 3 points per hand (thumb, index, pinky), not the 21-point Hand Landmarker. Revisit only if the confusion matrix shows hand-shape-dependent mix-ups. Tested in milestone 1: the 3 pose hand points can't tell palm-forward from palm-back (the winding of the wrist → thumb → pinky triangle barely changed).
 
 ## Calibration (before a match)
 1. **Framing check**: "get your shoulders and hands in the box", and detect whether the player is sitting or standing.
@@ -124,7 +124,7 @@ src/
 | 5 | Friends playtest | Link shared, data collected, failure cases noted |
 | 6 | `/lab` + 1D CNN | In-browser training with live charts; trained model shipped and used in the game |
 | 7 | Personalisation | CNN embeddings + kNN on calibration clips; full calibration warm-up flow |
-| 8 | Polish | MimeMind personality and voice lines, speed bonus, UI polish, README with a demo GIF |
+| 8 | Polish | MimeMind personality and voice lines, speed bonus, UI polish, README with a demo GIF. Idea: optional 21-point Hand Landmarker overlay for looks only, not model input (tried in milestone 1: looks great, costs extra ms per frame and loses hands in fast movement) |
 | 9 | GRU comparison | GRU trained and benchmarked against the CNN; write-up in the README |
 | 10 | Expansion packs | More sports; possibly a second category |
 

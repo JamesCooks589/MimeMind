@@ -12,6 +12,8 @@ export interface PoseFrame {
   landmarks: NormalizedLandmark[] | null
   /** performance.now() timestamp of the video frame. */
   timestamp: number
+  /** Video width / height, needed to measure distances in true proportions. */
+  aspect: number
 }
 
 export interface PoseStats {
@@ -74,6 +76,7 @@ export function usePoseTracking(videoRef: RefObject<HTMLVideoElement | null>, { 
       let inferenceTotal = 0
       let windowStart = performance.now()
       let personDetected = false
+      let lastErrorLog = -Infinity
 
       const process = (video: HTMLVideoElement) => {
         // MediaPipe requires strictly increasing timestamps.
@@ -87,7 +90,16 @@ export function usePoseTracking(videoRef: RefObject<HTMLVideoElement | null>, { 
 
         const landmarks = result.landmarks[0] ?? null
         personDetected = landmarks !== null
-        onFrameRef.current?.({ landmarks, timestamp })
+        const aspect = video.videoHeight > 0 ? video.videoWidth / video.videoHeight : 16 / 9
+        try {
+          onFrameRef.current?.({ landmarks, timestamp, aspect })
+        } catch (err) {
+          // A bug in a frame consumer must never stop tracking. Log it (rate-limited) and carry on.
+          if (timestamp - lastErrorLog > 2000) {
+            console.error('[pose] onFrame handler threw', err)
+            lastErrorLog = timestamp
+          }
+        }
 
         const elapsed = timestamp - windowStart
         if (elapsed >= 500) {
@@ -107,8 +119,9 @@ export function usePoseTracking(videoRef: RefObject<HTMLVideoElement | null>, { 
         // Preferred: fires exactly once per new camera frame (~30 Hz), whatever the display refresh rate.
         const onVideoFrame = () => {
           if (cancelled) return
-          process(video)
+          // Schedule the next frame first, so an error in this one can't end the loop.
           videoFrameId = video.requestVideoFrameCallback(onVideoFrame)
+          process(video)
         }
         videoFrameId = video.requestVideoFrameCallback(onVideoFrame)
         cancelLoop = () => video.cancelVideoFrameCallback(videoFrameId)

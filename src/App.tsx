@@ -1,5 +1,5 @@
-import { PoseCheckScreen } from './screens/PoseCheckScreen'
+import { FramingCheckScreen } from './screens/FramingCheckScreen'
 
 export default function App() {
-  return <PoseCheckScreen />
+  return <FramingCheckScreen />
 }
