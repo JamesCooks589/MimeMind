@@ -61,6 +61,7 @@ Avoided on purpose because they look like an existing action: kayaking (≈ rowi
 - **Live guessing**: MimeMind makes guesses as the player acts ("I sense… archery!").
 - Scoring: points when MimeMind guesses correctly, plus a **speed bonus** for faster correct guesses.
 - **Skip** button with a small penalty.
+- **Show only the prompt label during play** (e.g. "Weightlifting"), never the hint text describing how to act it. Interpreting the prompt is the game. Hints are for record mode only.
 - As the action count grows, show the top 2–3 guesses.
 - The AI has a mind-reader personality in its voice lines and UI. **It always speaks in the first person ("I think it's… archery!") and never refers to itself as "MimeMind".** MimeMind is only the name of the app.
 
@@ -134,3 +135,6 @@ Milestones 0–3 give a playable, demo-able game.
 - Exact round length and scoring numbers (tune during playtests).
 - Confidence threshold and smoothing parameters (tune in milestone 3).
 - Whether to use public datasets at all (decide after milestone 6 results).
+- Turned clips: seed clips facing left or right the whole time have narrower-looking shoulders, so they normalise to a larger body. If turned clips are often misclassified, scale by something that doesn't shrink when turning (e.g. shoulder-to-nose height, or the calibration measurement).
+- Jitter on occluded limbs (e.g. the far arm when standing sideways): leave for now and see if it hurts guessing in milestone 3. If it does, add a One Euro filter, visibility hysteresis (seen above 0.6, missing below 0.4) and short-gap filling to the shared pipeline, applied identically to recordings and live input.
+- Seed clips are all 30 fps. Add a "simulate 15 fps" augmentation (drop every other frame) for CNN training.

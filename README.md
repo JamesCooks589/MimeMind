@@ -4,7 +4,7 @@ A charades game in the browser. You get a prompt (a sport), act it out in front 
 
 Everything runs on your device. The webcam video never leaves the browser. Pose detection and my guesses run client-side.
 
-> Status: **Milestone 1**: normalised model input, framing check and sitting/standing detection. See [PLAN.md](PLAN.md) for the full roadmap.
+> Status: **Milestone 2**: record mode for building the seed dataset. See [PLAN.md](PLAN.md) for the full roadmap.
 
 ## Running locally
 
@@ -67,6 +67,18 @@ Before a round, the guide box checks that I can read you ([src/pose/framing.ts](
 
 **Sitting or standing** is detected from whether your hips and a knee are visible. It's decided by a majority vote over the last second of frames, so one glitchy frame can't flip it. It's stored with every recording, so later analysis can compare how well each framing works.
 
+### Recording data
+
+The seed dataset is recorded in a hidden dev screen at `/record`. Pick an action, press <kbd>Space</kbd> for a 3-second countdown, act it out, then watch the replay of what was captured and keep it (<kbd>Enter</kbd>) or discard it (<kbd>Backspace</kbd>). The targets are 10 clips per action and 20 for idle. Idle covers many different non-actions (thinking, scratching your head, looking away, resting), so it needs more variety.
+
+Design choices:
+
+- **Raw landmarks are stored, not model input.** Each clip keeps all 33 MediaPipe landmarks (x, y, z, visibility) with their real capture timestamps, before any resampling or normalisation. If the pipeline changes later (a different sample rate, extra joints, a new normalisation), every existing recording can simply be reprocessed. Storing the processed version would lock today's choices into the dataset.
+- **Metadata for later analysis.** Each clip also records its framing mode (sitting or standing), the real capture frame rate, the video aspect ratio, a random anonymous device ID and the app version. That makes it possible to ask questions later, like "is accuracy worse at 15 fps?" or "does sitting hurt archery?".
+- **IndexedDB via Dexie.** Clips stay in the browser's own database, so recording works offline and nothing is uploaded yet. Clips are packed as `Float32Array`s: one 3-second clip is about 50 KB.
+- **Export/import as JSON.** Each browser and each site keeps its own separate storage, so `localhost` and the live site can't see each other's clips. Export writes a portable JSON file, with positions rounded to 4 decimals (≈0.1 px at 720p), and import merges a file back in, skipping clips it already has. That covers backups, moving seed data between machines, and friends sending their clips by hand.
+- **Quality check on review.** The replay shows the capture rate and how many joints were missing. Clips where the shoulders were never seen can't be kept, because they can't be normalised.
+
 ### Guessing model
 
 _Coming in milestones 3+._ The plan is staged: kNN + Dynamic Time Warping first, then a 1D CNN trained in the browser, then per-player personalisation, then a GRU comparison. Each stage will be explained here as it ships.
@@ -79,7 +91,8 @@ src/
   config/pipeline.ts  # sample rate, window length and gap settings
   pose/               # MediaPipe setup, webcam, pose loop, framing check, skeleton drawing
   ml/                 # resampling, normalisation (model input pipeline)
-  components/         # shared UI (CameraView, FramingOverlay)
+  data/               # IndexedDB (Dexie), clip storage format, export/import
+  components/         # shared UI (CameraView, FramingOverlay, ClipPreview)
   screens/            # app screens
 scripts/              # build helpers (copy MediaPipe WASM)
 public/models/        # pose model file

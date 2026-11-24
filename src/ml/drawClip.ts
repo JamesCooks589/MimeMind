@@ -6,10 +6,15 @@ const TRAIL_JOINTS = [LM.leftWrist, LM.rightWrist]
 
 /**
  * Debug view of a normalised clip: what the model will actually "see".
- * Draws the last frame's skeleton plus wrist trails across the whole window,
+ * Draws frame `frame` (default: the last) as a skeleton, plus wrist trails up to it,
  * in shoulder-width units, mirrored to match the selfie camera view.
  */
-export function drawNormalisedClip(ctx: CanvasRenderingContext2D, clip: Clip | null, label: string): void {
+export function drawNormalisedClip(
+  ctx: CanvasRenderingContext2D,
+  clip: Clip | null,
+  label: string,
+  frame = clip ? clip.frameCount - 1 : 0,
+): void {
   const { width, height } = ctx.canvas
   ctx.clearRect(0, 0, width, height)
 
@@ -55,11 +60,11 @@ export function drawNormalisedClip(ctx: CanvasRenderingContext2D, clip: Clip | n
 
   // Wrist trails: older = fainter.
   for (const lm of TRAIL_JOINTS) {
-    for (let f = 1; f < clip.frameCount; f++) {
+    for (let f = 1; f <= frame; f++) {
       const a = point(f - 1, lm)
       const b = point(f, lm)
       if (!a || !b) continue
-      ctx.strokeStyle = `rgba(180,140,255,${(0.1 + 0.8 * (f / clip.frameCount)).toFixed(2)})`
+      ctx.strokeStyle = `rgba(180,140,255,${(0.1 + 0.8 * (f / (frame + 1))).toFixed(2)})`
       ctx.lineWidth = 3
       ctx.beginPath()
       ctx.moveTo(a[0], a[1])
@@ -68,8 +73,8 @@ export function drawNormalisedClip(ctx: CanvasRenderingContext2D, clip: Clip | n
     }
   }
 
-  // Latest frame skeleton.
-  const last = clip.frameCount - 1
+  // Skeleton at the chosen frame.
+  const last = frame
   ctx.strokeStyle = 'rgba(124,243,208,0.8)'
   ctx.lineWidth = 3
   ctx.beginPath()
